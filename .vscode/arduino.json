@@ -1,0 +1,5 @@
+{
+    "board": "arduino:avr:uno",
+    "sketch": "Tic_Tac_Toe.ino",
+    "port": "/dev/ttyUSB0"
+}
