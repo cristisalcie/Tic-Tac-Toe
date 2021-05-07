@@ -69,7 +69,7 @@ bool ledState[2][9] {
 PCF8574 pcf8574(0x20);
 
 
-void startAnimation() {
+static void startAnimation() {
     for (int i = 0; i < 2; ++i) {
         for (int j = 0; j < 9; ++j) {
             if (j < 4)
@@ -118,28 +118,106 @@ void setup() {
 }
 
 
-void inputSelectionAnimation() {
-    if (currentMillis - previousSelectionAnimationMillis
-        >= selectionAnimationInterval) {
-        previousSelectionAnimationMillis = currentMillis;
-        ledState[currentPlayerTurn][currentLedPos] =
-            !ledState[currentPlayerTurn][currentLedPos]; 
+static void resetLeds() {
+    for (int i = 0; i < 2; ++i) {
+        for (int j = 0; j < 9; ++j) {
+            ledState[i][j] = LOW;
+        }
     }
 }
 
 
-bool redLedActive(int8_t ledPos) {
+static bool redLedActive(int8_t ledPos) {
     return ledState[red][ledPos] == HIGH;
 }
-bool blueLedActive(int8_t ledPos) {
+
+
+static bool blueLedActive(int8_t ledPos) {
     return ledState[blue][ledPos] == HIGH;
 }
-bool ledActive(int8_t ledPos) {
+
+
+static bool ledActive(int8_t ledPos) {
     return redLedActive(ledPos) || blueLedActive(ledPos);
 }
 
 
-void inputController() {
+static void inputSelectionAnimation() {
+    if (currentMillis - previousSelectionAnimationMillis >= selectionAnimationInterval) {
+        previousSelectionAnimationMillis = currentMillis;
+        ledState[currentPlayerTurn][currentLedPos] = !ledState[currentPlayerTurn][currentLedPos];
+    }
+}
+
+
+static bool wonByLine(int player, int ledIdx) {
+    return ledState[player][ledIdx]     == HIGH
+        && ledState[player][ledIdx + 1] == HIGH
+        && ledState[player][ledIdx + 2] == HIGH;
+}
+
+
+static bool wonByColumn(int player, int ledIdx) {
+    return ledState[player][ledIdx]     == HIGH
+        && ledState[player][ledIdx + 3] == HIGH
+        && ledState[player][ledIdx + 6] == HIGH;
+}
+
+
+static bool wonByDiagonal(int player, int ledIdx) {
+    if (ledIdx == 0)
+        return ledState[player][ledIdx]     == HIGH
+            && ledState[player][ledIdx + 4] == HIGH
+            && ledState[player][ledIdx + 8] == HIGH;
+    else if (ledIdx == 2)
+        return ledState[player][ledIdx]     == HIGH
+            && ledState[player][ledIdx + 2] == HIGH
+            && ledState[player][ledIdx + 4] == HIGH;
+    return false;
+}
+
+
+static void winByLineAnimation(int player, int ledIdx) {
+    // Todo
+}
+
+
+static void winByColumnAnimation(int player, int ledIdx) {
+    // Todo
+}
+
+
+static void winByDiagonalAnimation(int player, int ledIdx) {
+    // Todo
+}
+
+
+static void checkGameStatus()  {
+    for (int i = 0; i < 2; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            if (wonByLine(i, j)) {
+                resetLeds();
+                winByLineAnimation(i, j);
+                return;
+            }
+
+            if (wonByColumn(i, j)) {
+                resetLeds();
+                winByColumnAnimation(i, j);
+                return;
+            }
+
+            if (wonByDiagonal(i, j)) {
+                resetLeds();
+                winByDiagonalAnimation(i, j);
+                return;
+            }
+        }
+    }
+}
+
+
+static void inputController() {
     upButtonState   = digitalRead(upButtonPin);
     leftButtonState = digitalRead(leftButtonPin);
     downButtonState = digitalRead(downButtonPin);
@@ -194,6 +272,7 @@ void inputController() {
         if (ledState[!currentPlayerTurn][currentLedPos] == LOW) {
             ledState[currentPlayerTurn][currentLedPos] = HIGH;
             currentPlayerTurn = !currentPlayerTurn;  // Valid selection, change turn.
+            checkGameStatus();
         }
         else {
             ledState[currentPlayerTurn][currentLedPos] = LOW;
