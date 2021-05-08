@@ -50,6 +50,7 @@ unsigned long currentMillis{ 0 };
 unsigned long previousSelectionAnimationMillis{ 0 };
 int8_t currentLedPos{ 0 };
 uint8_t currentPlayerTurn{ 0 };  // Player 0 (red) or Player 1 (blue)
+int8_t selectedRgbCount{ 0 };
 
 bool ledState[2][9] {
     {  // red leds
@@ -91,6 +92,16 @@ static void startAnimation() {
 }
 
 
+static void tieAnimation() {
+    if (currentLedPos < 4)
+        pcf8574.digitalWrite(ledPin[currentPlayerTurn][currentLedPos], HIGH);
+    else
+        digitalWrite(ledPin[currentPlayerTurn][currentLedPos], HIGH);
+    delay(2000);
+    startAnimation();
+}
+
+
 void setup() {
     for (int i = 0; i < 2; ++i) {
         for (int j = 0; j < 9; ++j) {
@@ -103,7 +114,7 @@ void setup() {
             }
         }
     }
-    pcf8574.begin();  // todo: should this be before any digitalWrite?
+    pcf8574.begin();
 
     pinMode(upButtonPin, INPUT_PULLUP);
     pinMode(leftButtonPin, INPUT_PULLUP);
@@ -114,16 +125,14 @@ void setup() {
     startAnimation();
     // Following line is used to be able to use Serial.println
     // In other words it makes the conexion between computer and board.
-//    Serial.begin(9600);
+   Serial.begin(9600);
 }
 
 
 static void resetLeds() {
-    for (int i = 0; i < 2; ++i) {
-        for (int j = 0; j < 9; ++j) {
+    for (int i = 0; i < 2; ++i)
+        for (int j = 0; j < 9; ++j)
             ledState[i][j] = LOW;
-        }
-    }
 }
 
 
@@ -177,39 +186,195 @@ static bool wonByDiagonal(int player, int ledIdx) {
 }
 
 
-static void winByLineAnimation(int player, int ledIdx) {
-    // Todo
+static void wonByLineAnimation(int player, int ledIdx) {
+    if (currentLedPos < 4)
+        pcf8574.digitalWrite(ledPin[player][currentLedPos], HIGH);
+    else
+        digitalWrite(ledPin[player][currentLedPos], HIGH);
+
+    delay(1000);
+
+    if (ledIdx < 3) {
+        delay(300);
+        pcf8574.digitalWrite(ledPin[player][ledIdx], LOW);
+        delay(300);
+        pcf8574.digitalWrite(ledPin[player][ledIdx + 1], LOW);
+        delay(300);
+        pcf8574.digitalWrite(ledPin[player][ledIdx + 2], LOW);
+        delay(300);
+        delay(300);
+        pcf8574.digitalWrite(ledPin[player][ledIdx], HIGH);
+        delay(300);
+        pcf8574.digitalWrite(ledPin[player][ledIdx + 1], HIGH);
+        delay(300);
+        pcf8574.digitalWrite(ledPin[player][ledIdx + 2], HIGH);
+        delay(300);
+    } else {
+        delay(300);
+        if (ledIdx == 3)
+            pcf8574.digitalWrite(ledPin[player][ledIdx], LOW);
+        else
+            digitalWrite(ledPin[player][ledIdx], LOW);
+        delay(300);
+        digitalWrite(ledPin[player][ledIdx + 1], LOW);
+        delay(300);
+        digitalWrite(ledPin[player][ledIdx + 2], LOW);
+        delay(300);
+        delay(300);
+        if (ledIdx == 3)
+            pcf8574.digitalWrite(ledPin[player][ledIdx], HIGH);
+        else
+            digitalWrite(ledPin[player][ledIdx], HIGH);
+        delay(300);
+        digitalWrite(ledPin[player][ledIdx + 1], HIGH);
+        delay(300);
+        digitalWrite(ledPin[player][ledIdx + 2], HIGH);
+        delay(300);
+    }
+    delay(1000);
+
+    for (int j = 0; j < 9; ++j) {
+        if (ledState[player][j] == HIGH)
+            continue;
+
+        if (j < 4) {
+            pcf8574.digitalWrite(ledPin[!player][j], LOW);
+            pcf8574.digitalWrite(ledPin[player][j], HIGH);
+        } else {
+            digitalWrite(ledPin[!player][j], LOW);
+            digitalWrite(ledPin[player][j], HIGH);
+        }
+        delay(300);
+    }
+    delay(2000);
 }
 
 
-static void winByColumnAnimation(int player, int ledIdx) {
-    // Todo
+static void wonByColumnAnimation(int player, int ledIdx) {
+    if (currentLedPos < 4)
+        pcf8574.digitalWrite(ledPin[player][currentLedPos], HIGH);
+    else
+        digitalWrite(ledPin[player][currentLedPos], HIGH);
+
+    delay(1000);
+
+    delay(300);
+    pcf8574.digitalWrite(ledPin[player][ledIdx], LOW);
+    delay(300);
+    if (ledIdx + 3 < 4)
+        pcf8574.digitalWrite(ledPin[player][ledIdx + 3], LOW);
+    else
+        digitalWrite(ledPin[player][ledIdx + 3], LOW);
+    delay(300);
+    digitalWrite(ledPin[player][ledIdx + 6], LOW);
+    delay(300);
+
+
+    delay(300);
+    pcf8574.digitalWrite(ledPin[player][ledIdx], HIGH);
+    delay(300);
+    if (ledIdx + 3 < 4)
+        pcf8574.digitalWrite(ledPin[player][ledIdx + 3], HIGH);
+    else
+        digitalWrite(ledPin[player][ledIdx + 3], HIGH);
+    delay(300);
+    digitalWrite(ledPin[player][ledIdx + 6], HIGH);
+    delay(300);
+
+    for (int j = 0; j < 9; ++j) {
+        if (ledState[player][j] == HIGH)
+            continue;
+
+        if (j < 4) {
+            pcf8574.digitalWrite(ledPin[!player][j], LOW);
+            pcf8574.digitalWrite(ledPin[player][j], HIGH);
+        } else {
+            digitalWrite(ledPin[!player][j], LOW);
+            digitalWrite(ledPin[player][j], HIGH);
+        }
+        delay(300);
+    }
+    delay(2000);
 }
 
 
-static void winByDiagonalAnimation(int player, int ledIdx) {
-    // Todo
+static void wonByDiagonalAnimation(int player, int ledIdx) {
+    int8_t step{ 0 };
+    if (ledIdx == 0)
+        step = 4;
+    else if (ledIdx == 2)
+        step = 2;
+    
+    if (currentLedPos < 4)
+        pcf8574.digitalWrite(ledPin[player][currentLedPos], HIGH);
+    else
+        digitalWrite(ledPin[player][currentLedPos], HIGH);
+
+    delay(1000);
+
+    delay(300);
+    pcf8574.digitalWrite(ledPin[player][ledIdx], LOW);
+    delay(300);
+    digitalWrite(ledPin[player][ledIdx + step], LOW);
+    delay(300);
+    digitalWrite(ledPin[player][ledIdx + 2 * step], LOW);
+    delay(300);
+
+    delay(300);
+    pcf8574.digitalWrite(ledPin[player][ledIdx], HIGH);
+    delay(300);
+    digitalWrite(ledPin[player][ledIdx + step], HIGH);
+    delay(300);
+    digitalWrite(ledPin[player][ledIdx + 2 * step], HIGH);
+    delay(300);
+
+    for (int j = 0; j < 9; ++j) {
+        if (ledState[player][j] == HIGH)
+            continue;
+
+        if (j < 4) {
+            pcf8574.digitalWrite(ledPin[!player][j], LOW);
+            pcf8574.digitalWrite(ledPin[player][j], HIGH);
+        } else {
+            digitalWrite(ledPin[!player][j], LOW);
+            digitalWrite(ledPin[player][j], HIGH);
+        }
+        delay(300);
+    }
+    delay(2000);
 }
 
 
 static void checkGameStatus()  {
+    if (selectedRgbCount >= 9) {  // Tie
+        selectedRgbCount = 0;
+        tieAnimation();
+        resetLeds();
+        return;
+    }
+    
     for (int i = 0; i < 2; ++i) {
-        for (int j = 0; j < 3; ++j) {
+        for (int j = 0; j < 9; j += 3) {  // Check lines
             if (wonByLine(i, j)) {
+                selectedRgbCount = 0;
+                wonByLineAnimation(i, j);
                 resetLeds();
-                winByLineAnimation(i, j);
                 return;
             }
-
+        }
+        for (int j = 0; j < 3; ++j) {  // Check columns
             if (wonByColumn(i, j)) {
+                selectedRgbCount = 0;
+                wonByColumnAnimation(i, j);
                 resetLeds();
-                winByColumnAnimation(i, j);
                 return;
             }
-
+        }
+        for (int j = 0; j < 3; j += 2) {  // Check diagonals
             if (wonByDiagonal(i, j)) {
+                selectedRgbCount = 0;
+                wonByDiagonalAnimation(i, j);
                 resetLeds();
-                winByDiagonalAnimation(i, j);
                 return;
             }
         }
@@ -218,6 +383,8 @@ static void checkGameStatus()  {
 
 
 static void inputController() {
+    bool doAnimate { true };
+
     upButtonState   = digitalRead(upButtonPin);
     leftButtonState = digitalRead(leftButtonPin);
     downButtonState = digitalRead(downButtonPin);
@@ -233,6 +400,9 @@ static void inputController() {
             if (ledState[currentPlayerTurn][currentLedPos] == LOW)
                 break;
         }
+        ledState[currentPlayerTurn][currentLedPos] = HIGH;
+        doAnimate = false;
+        previousSelectionAnimationMillis = currentMillis;
     }
 
     if (leftButtonState != leftLastButtonState && leftButtonState == LOW) {
@@ -244,6 +414,9 @@ static void inputController() {
             if (ledState[currentPlayerTurn][currentLedPos] == LOW)
                 break;
         }
+        ledState[currentPlayerTurn][currentLedPos] = HIGH;
+        doAnimate = false;
+        previousSelectionAnimationMillis = currentMillis;
     }
     
     if (downButtonState != downLastButtonState && downButtonState == LOW) {
@@ -255,6 +428,9 @@ static void inputController() {
             if (ledState[currentPlayerTurn][currentLedPos] == LOW)
                 break;
         }
+        ledState[currentPlayerTurn][currentLedPos] = HIGH;
+        doAnimate = false;
+        previousSelectionAnimationMillis = currentMillis;
     }
     
     if (rightButtonState != rightLastButtonState && rightButtonState == LOW) {
@@ -266,27 +442,34 @@ static void inputController() {
             if (ledState[currentPlayerTurn][currentLedPos] == LOW)
                 break;
         }
+        ledState[currentPlayerTurn][currentLedPos] = HIGH;
+        doAnimate = false;
+        previousSelectionAnimationMillis = currentMillis;
     }
     
     if (enterButtonState != enterLastButtonState && enterButtonState == LOW) {
         if (ledState[!currentPlayerTurn][currentLedPos] == LOW) {
             ledState[currentPlayerTurn][currentLedPos] = HIGH;
-            currentPlayerTurn = !currentPlayerTurn;  // Valid selection, change turn.
             checkGameStatus();
+            currentPlayerTurn = !currentPlayerTurn;  // Valid selection, change turn.
+            ++selectedRgbCount;
         }
         else {
             ledState[currentPlayerTurn][currentLedPos] = LOW;
         }
 
-        for (int i = 0; i < 9; ++i) { // todo: what if there is no available spot
+        for (int i = 0; i < 9; ++i) { // todo: what if there is no available spot (tie game)
             if (!redLedActive(i) && !blueLedActive(i)) {
                 currentLedPos = i;
+                ledState[currentPlayerTurn][currentLedPos] = HIGH;
+                previousSelectionAnimationMillis = currentMillis;
                 break;
             }
         }
     }
 
-    inputSelectionAnimation();
+    if (doAnimate)
+        inputSelectionAnimation();
 
     upLastButtonState   = upButtonState;
     leftLastButtonState = leftButtonState;
